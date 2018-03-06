@@ -57,11 +57,44 @@ for i = 1:length(test_scenes)
     
     %You can delete all of this below.
     % Let's create 15 random detections per image
-    cur_x_min = rand(15,1) * size(img,2);
-    cur_y_min = rand(15,1) * size(img,1);
-    cur_bboxes = [cur_x_min, cur_y_min, cur_x_min + rand(15,1) * 50, cur_y_min + rand(15,1) * 50];
-    cur_confidences = rand(15,1) * 4 - 2; %confidences in the range [-2 2]
-    cur_image_ids(1:15,1) = {test_scenes(i).name};
+%     cur_x_min = rand(15,1) * size(img,2);
+%     cur_y_min = rand(15,1) * size(img,1);
+%     cur_bboxes = [cur_x_min, cur_y_min, cur_x_min + rand(15,1) * 50, cur_y_min + rand(15,1) * 50];
+%     cur_confidences = rand(15,1) * 4 - 2; %confidences in the range [-2 2]
+%     cur_image_ids(1:15,1) = {test_scenes(i).name};
+    
+    cur_bboxes = zeros(0, 4);
+    cur_confidences = zeros(0,1);
+    cur_image_ids = cell(0,1);
+    h = [];
+    
+    thresh = 100;
+    for scale = 1:1
+        img_rs = imresize(img, scale, 'bicubic');
+        hog = vl_hog(img_rs, feature_params.hog_cell_size);
+        win_cell_size = feature_params.template_size / feature_params.hog_cell_size;
+        for im_i = 1:(size(hog, 1)-win_cell_size+1)
+            for im_j = 1:(size(hog, 2)-win_cell_size+1)
+                win = hog(im_i:im_i+win_cell_size-1, im_j:im_j+win_cell_size-1, :);
+                win_flat = reshape(win, 1, []);
+                new_conf = win_flat*w+b;
+                new_conf = new_conf(1,1);
+                h = [h new_conf];
+                if (new_conf > thresh)
+                    new_x_min = max(floor(((im_j-1)*feature_params.hog_cell_size+1)/scale), 1);
+                    new_y_min = max(floor(((im_i-1)*feature_params.hog_cell_size+1)/scale), 1);
+                    new_x_max = floor(((im_j-1)*feature_params.hog_cell_size+feature_params.template_size)/scale);
+                    new_y_max = floor(((im_i-1)*feature_params.hog_cell_size+feature_params.template_size)/scale);
+                    new_bbox = [new_x_min, new_y_min, new_x_max, new_y_max];
+                    cur_bboxes = [cur_bboxes; new_bbox];
+                    cur_confidences = [cur_confidences; new_conf];
+                    cur_image_ids = [cur_image_ids; test_scenes(i).name];
+                end
+            end
+        end
+    end
+    
+    max(h);
     
     %non_max_supr_bbox can actually get somewhat slow with thousands of
     %initial detections. You could pre-filter the detections by confidence,
@@ -69,11 +102,11 @@ for i = 1:length(test_scenes)
     %meaningful. You probably _don't_ want to threshold at 0.0, though. You
     %can get higher recall with a lower threshold. You don't need to modify
     %anything in non_max_supr_bbox, but you can.
-    [is_maximum] = non_max_supr_bbox(cur_bboxes, cur_confidences, size(img));
-
-    cur_confidences = cur_confidences(is_maximum,:);
-    cur_bboxes      = cur_bboxes(     is_maximum,:);
-    cur_image_ids   = cur_image_ids(  is_maximum,:);
+%     [is_maximum] = non_max_supr_bbox(cur_bboxes, cur_confidences, size(img));
+% 
+%     cur_confidences = cur_confidences(is_maximum,:);
+%     cur_bboxes      = cur_bboxes(     is_maximum,:);
+%     cur_image_ids   = cur_image_ids(  is_maximum,:);
  
     bboxes      = [bboxes;      cur_bboxes];
     confidences = [confidences; cur_confidences];
