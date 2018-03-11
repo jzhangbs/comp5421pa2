@@ -30,11 +30,25 @@ function features_pos = get_positive_features(train_path_pos, feature_params)
 
 image_files = dir( fullfile( train_path_pos, '*.jpg') ); %Caltech Faces stored as .jpg
 num_images = length(image_files);
-feature_pos = [];
+aug_num = 4;
+features_pos = zeros(num_images*aug_num, (feature_params.template_size / feature_params.hog_cell_size)^2 * 31);
+
 for i=1:num_images
+    if (mod(i, 500)==0)
+        disp([num2str(i) '/' num2str(num_images)]);
+    end
     gray_image=single(imread([image_files(i).folder '/' image_files(i).name]))/255;
-    feature_pos(i,:)=reshape(vl_hog(gray_image,feature_params.hog_cell_size),1,[]);
+    for j = 1:aug_num
+        if (rand(1)>0.5)
+            gray_image = fliplr(gray_image);
+        end
+        gray_image = imresize(gray_image, (1+rand(1)*0.1), 'bicubic');
+        row_start = randi(length(gray_image(:,1))-feature_params.template_size);
+        col_start = randi(length(gray_image(1,:))-feature_params.template_size);
+        gray_image = gray_image(row_start:row_start+feature_params.template_size,col_start:col_start+feature_params.template_size);
+        features_pos((i-1)*aug_num+j,:) = reshape(vl_hog(gray_image,feature_params.hog_cell_size),1,[]);
+    end
 end
 
 % placeholder to be deleted
-features_pos = feature_pos;%rand(100, (feature_params.template_size / feature_params.hog_cell_size)^2 * 31);
+% features_pos = feature_pos;%rand(100, (feature_params.template_size / feature_params.hog_cell_size)^2 * 31);

@@ -58,11 +58,17 @@ feature_params = struct('template_size', 36, 'hog_cell_size', 6);
 %% Step 1. Load positive training crops and random negative examples
 %YOU CODE 'get_positive_features' and 'get_random_negative_features'
 
+disp('begin pos');
 features_pos = get_positive_features( train_path_pos, feature_params );
+disp('pos finish');
 
-num_negative_examples = 10000; %Higher will work strictly better, but you should start with 10000 for debugging
+disp('begin neg');
+num_negative_examples = 30000; %Higher will work strictly better, but you should start with 10000 for debugging
 features_neg = get_random_negative_features( non_face_scn_path, feature_params, num_negative_examples);
+disp('neg finish');
 
+save('features_pos.mat', 'features_pos');
+save('features_neg.mat', 'features_neg');
     
 %% step 2. Train Classifier
 % Use vl_svmtrain on your training features to get a linear classifier
@@ -73,8 +79,14 @@ features_neg = get_random_negative_features( non_face_scn_path, feature_params, 
 % work best e.g. 0.0001, but you can try other values
 
 %YOU CODE classifier training. Make sure the outputs are 'w' and 'b'.
-w = rand((feature_params.template_size / feature_params.hog_cell_size)^2 * 31,1); %placeholder, delete
-b = rand(1); %placeholder, delete
+% w = rand((feature_params.template_size / feature_params.hog_cell_size)^2 * 31,1); %placeholder, delete
+% b = rand(1); %placeholder, delete
+
+data = [features_pos' features_neg'];
+label = [ones(length(features_pos(:,1)), 1); ones(length(features_neg(:,1)), 1)*-1];
+[w, b] = vl_svmtrain(data, label, 1e-4, 'Verbose');
+
+save('classifier.mat', 'w', 'b');
 
 %% step 3. Examine learned classifier
 % You don't need to modify anything in this section. The section first

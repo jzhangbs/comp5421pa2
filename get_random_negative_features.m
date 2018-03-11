@@ -36,19 +36,24 @@ image_files = dir( fullfile( non_face_scn_path, '*.jpg' ));
 num_images = length(image_files);
 sample_per_image = int32(num_samples/num_images)+1;
 
-feature_neg = [];
+features_neg = zeros(num_images*sample_per_image, (feature_params.template_size / feature_params.hog_cell_size)^2 * 31);
 for i=1:num_images
-    gray_image=imread([image_files(i).folder '/' image_files(i).name]);
+    if (mod(i, 100)==0)
+        disp([num2str(i) '/' num2str(num_images)]);
+    end
+    gray_image=single(imread([image_files(i).folder '/' image_files(i).name]))/255;
     if gray_image(1,1,:)>1
         gray_image=rgb2gray(gray_image);
     end
     for j=1:sample_per_image
         row_start = randi(length(gray_image(:,1))-feature_params.template_size);
         col_start = randi(length(gray_image(1,:))-feature_params.template_size);
-        crop_image = single(gray_image(row_start:row_start+feature_params.template_size,col_start:col_start+feature_params.template_size)/255);
-        feature_neg((i-1)*sample_per_image+j,:)=reshape(vl_hog(crop_image,feature_params.hog_cell_size),1,[]);
+        crop_image = gray_image(row_start:row_start+feature_params.template_size,col_start:col_start+feature_params.template_size);
+        features_neg((i-1)*sample_per_image+j,:)=reshape(vl_hog(crop_image,feature_params.hog_cell_size),1,[]);
     end
 end
 
 % placeholder to be deleted
-features_neg = feature_neg;%rand(100, (feature_params.template_size / feature_params.hog_cell_size)^2 * 31);
+% features_neg = feature_neg;%rand(100, (feature_params.template_size / feature_params.hog_cell_size)^2 * 31);
+
+    

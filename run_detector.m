@@ -45,10 +45,11 @@ test_scenes = dir( fullfile( test_scn_path, '*.jpg' ));
 bboxes = zeros(0,4);
 confidences = zeros(0,1);
 image_ids = cell(0,1);
+num_test_scenes = length(test_scenes);
 
-for i = 1:length(test_scenes)
+parfor i = 1:num_test_scenes
       
-    fprintf('Detecting faces in %s\n', test_scenes(i).name)
+    fprintf('Detecting faces in %s, %d/%d\n', test_scenes(i).name, i, num_test_scenes)
     img = imread( fullfile( test_scn_path, test_scenes(i).name ));
     img = single(img)/255;
     if(size(img,3) > 1)
@@ -66,10 +67,10 @@ for i = 1:length(test_scenes)
     cur_bboxes = zeros(0, 4);
     cur_confidences = zeros(0,1);
     cur_image_ids = cell(0,1);
-    h = [];
+%     h = [];
     
-    thresh = 100;
-    for scale = 1:1
+    thresh = -0.5;
+    for scale = 0.1:0.05:1.2
         img_rs = imresize(img, scale, 'bicubic');
         hog = vl_hog(img_rs, feature_params.hog_cell_size);
         win_cell_size = feature_params.template_size / feature_params.hog_cell_size;
@@ -79,7 +80,7 @@ for i = 1:length(test_scenes)
                 win_flat = reshape(win, 1, []);
                 new_conf = win_flat*w+b;
                 new_conf = new_conf(1,1);
-                h = [h new_conf];
+%                 h = [h new_conf];
                 if (new_conf > thresh)
                     new_x_min = max(floor(((im_j-1)*feature_params.hog_cell_size+1)/scale), 1);
                     new_y_min = max(floor(((im_i-1)*feature_params.hog_cell_size+1)/scale), 1);
@@ -94,7 +95,7 @@ for i = 1:length(test_scenes)
         end
     end
     
-    max(h);
+%     max(h);
     
     %non_max_supr_bbox can actually get somewhat slow with thousands of
     %initial detections. You could pre-filter the detections by confidence,
@@ -102,17 +103,14 @@ for i = 1:length(test_scenes)
     %meaningful. You probably _don't_ want to threshold at 0.0, though. You
     %can get higher recall with a lower threshold. You don't need to modify
     %anything in non_max_supr_bbox, but you can.
-%     [is_maximum] = non_max_supr_bbox(cur_bboxes, cur_confidences, size(img));
-% 
-%     cur_confidences = cur_confidences(is_maximum,:);
-%     cur_bboxes      = cur_bboxes(     is_maximum,:);
-%     cur_image_ids   = cur_image_ids(  is_maximum,:);
+    [is_maximum] = non_max_supr_bbox(cur_bboxes, cur_confidences, size(img));
+
+    cur_confidences = cur_confidences(is_maximum,:);
+    cur_bboxes      = cur_bboxes(     is_maximum,:);
+    cur_image_ids   = cur_image_ids(  is_maximum,:);
  
     bboxes      = [bboxes;      cur_bboxes];
     confidences = [confidences; cur_confidences];
     image_ids   = [image_ids;   cur_image_ids];
 end
-
-
-
 
