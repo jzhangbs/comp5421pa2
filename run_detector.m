@@ -47,7 +47,7 @@ confidences = zeros(0,1);
 image_ids = cell(0,1);
 num_test_scenes = length(test_scenes);
 
-parfor i = 1:num_test_scenes
+for i = 1:num_test_scenes
       
     fprintf('Detecting faces in %s, %d/%d\n', test_scenes(i).name, i, num_test_scenes)
     img = imread( fullfile( test_scn_path, test_scenes(i).name ));
