@@ -58,17 +58,30 @@ feature_params = struct('template_size', 36, 'hog_cell_size', 3);
 %% Step 1. Load positive training crops and random negative examples
 %YOU CODE 'get_positive_features' and 'get_random_negative_features'
 
-disp('begin pos');
-features_pos = get_positive_features( train_path_pos, feature_params );
-disp('pos finish');
+do_pos = true;
+do_neg = true;
+do_train = true;
+do_hard_neg = true;
+do_train2 = true;
 
-disp('begin neg');
-num_negative_examples = 50000; %Higher will work strictly better, but you should start with 10000 for debugging
-features_neg = get_random_negative_features( non_face_scn_path, feature_params, num_negative_examples);
-disp('neg finish');
+if (do_pos)
+    disp('begin pos');
+    features_pos = get_positive_features( train_path_pos, feature_params );
+    disp('pos finish');
+    save('features_pos.mat', 'features_pos');
+else
+    load('features_pos.mat', 'features_pos');
+end
 
-save('features_pos.mat', 'features_pos');
-save('features_neg.mat', 'features_neg');
+if (do_neg)
+    disp('begin neg');
+    num_negative_examples = 50000; %Higher will work strictly better, but you should start with 10000 for debugging
+    features_neg = get_random_negative_features( non_face_scn_path, feature_params, num_negative_examples);
+    disp('neg finish');
+    save('features_neg.mat', 'features_neg');
+else
+    load('features_neg.mat', 'features_neg');
+end
     
 %% step 2. Train Classifier
 % Use vl_svmtrain on your training features to get a linear classifier
@@ -82,11 +95,14 @@ save('features_neg.mat', 'features_neg');
 % w = rand((feature_params.template_size / feature_params.hog_cell_size)^2 * 31,1); %placeholder, delete
 % b = rand(1); %placeholder, delete
 
-data = [features_pos' features_neg'];
-label = [ones(length(features_pos(:,1)), 1); ones(length(features_neg(:,1)), 1)*-1];
-[w, b] = vl_svmtrain(data, label, 1e-4, 'Verbose');
-
-save('classifier.mat', 'w', 'b');
+if (do_train)
+    data = [features_pos' features_neg'];
+    label = [ones(length(features_pos(:,1)), 1); ones(length(features_neg(:,1)), 1)*-1];
+    [w, b] = vl_svmtrain(data, label, 1e-4, 'Verbose');
+    save('classifier.mat', 'w', 'b');
+else
+    load('classifier.mat', 'w', 'b');
+end
 
 %% step 3. Examine learned classifier
 % You don't need to modify anything in this section. The section first
@@ -132,13 +148,22 @@ imwrite(hog_template_image, 'visualizations/hog_template.png')
 % images in 'non_face_scn_path', and keep all of the features above some
 % confidence level.
 
-disp('mine hard negatives');
-features_hard_neg = hard_neg(non_face_scn_path, w, b, feature_params);
-data = [data feature_hard_neg'];
-label = [label; ones(length(features_hard_neg(:,1)), 1)*-1];
-[w, b] = vl_svmtrain(data, label, 1e-4, 'Verbose');
+if (do_hard_neg)
+    disp('mine hard negatives');
+    features_hard_neg = hard_neg(non_face_scn_path, w, b, feature_params);
+    save('features_hard_neg.mat', 'features_hard_neg');
+else
+    load('features_hard_neg.mat', 'features_hard_neg');
+end
 
-save('classifier2.mat', 'w', 'b');
+if (do_train2)
+    data = [features_pos' features_neg' features_hard_neg'];
+    label = [ones(length(features_pos(:,1)), 1); ones(length(features_neg(:,1)), 1)*-1; ones(length(features_hard_neg(:,1)), 1)*-1];
+    [w, b] = vl_svmtrain(data, label, 1e-4, 'Verbose');
+    save('classifier2.mat', 'w', 'b');
+else
+    load('classifier2.mat', 'w', 'b');
+end
 
 %% Step 5. Run detector on test set.
 % YOU CODE 'run_detector'. Make sure the outputs are properly structured!

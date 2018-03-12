@@ -48,15 +48,17 @@ features_hard_neg = [];
 
 for i = 1:num_test_scenes
       
-    fprintf('%d/%d\n', i, num_test_scenes)
+    if (mod(i,20)==0)
+        fprintf('%d/%d, %d\n', i, num_test_scenes, length(features_hard_neg(:,1)));
+    end
     img = imread( fullfile( test_scn_path, test_scenes(i).name ));
     img = single(img)/255;
     if(size(img,3) > 1)
         img = rgb2gray(img);
     end
     
-    thresh = -0.5;
-    for scale = 0.1:0.05:1.2
+    thresh = 0;
+    for scale = 1:1
         img_rs = imresize(img, scale, 'bicubic');
         hog = vl_hog(img_rs, feature_params.hog_cell_size);
         win_cell_size = feature_params.template_size / feature_params.hog_cell_size;
