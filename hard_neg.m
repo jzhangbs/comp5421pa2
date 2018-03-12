@@ -46,7 +46,7 @@ num_test_scenes = length(test_scenes);
 
 features_hard_neg = [];
 
-parfor i = 1:num_test_scenes
+for i = 1:num_test_scenes
       
     fprintf('%d/%d\n', i, num_test_scenes)
     img = imread( fullfile( test_scn_path, test_scenes(i).name ));
