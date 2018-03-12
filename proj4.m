@@ -132,6 +132,14 @@ imwrite(hog_template_image, 'visualizations/hog_template.png')
 % images in 'non_face_scn_path', and keep all of the features above some
 % confidence level.
 
+disp('mine hard negatives');
+features_hard_neg = hard_neg(non_face_scn_path, w, b, feature_params);
+data = [data feature_hard_neg'];
+label = [label; ones(length(features_hard_neg(:,1)), 1)*-1];
+[w, b] = vl_svmtrain(data, label, 1e-4, 'Verbose');
+
+save('classifier2.mat', 'w', 'b');
+
 %% Step 5. Run detector on test set.
 % YOU CODE 'run_detector'. Make sure the outputs are properly structured!
 % They will be interpreted in Step 6 to evaluate and visualize your
