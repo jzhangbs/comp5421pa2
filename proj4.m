@@ -63,7 +63,7 @@ features_pos = get_positive_features( train_path_pos, feature_params );
 disp('pos finish');
 
 disp('begin neg');
-num_negative_examples = 50000; %Higher will work strictly better, but you should start with 10000 for debugging
+num_negative_examples = 60000; %Higher will work strictly better, but you should start with 10000 for debugging
 features_neg = get_random_negative_features( non_face_scn_path, feature_params, num_negative_examples);
 disp('neg finish');
 

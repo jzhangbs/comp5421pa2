@@ -94,6 +94,6 @@ reverse_map(ind) = 1:num_detections;
 is_valid_bbox = is_valid_bbox(reverse_map);
 
 
-fprintf(' non-max suppression: %d detections to %d final bounding boxes\n', num_detections, sum(is_valid_bbox));
+%fprintf(' non-max suppression: %d detections to %d final bounding boxes\n', num_detections, sum(is_valid_bbox));
 
 

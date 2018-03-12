@@ -39,15 +39,13 @@ for i=1:num_images
     end
     gray_image_o=single(imread([image_files(i).folder '/' image_files(i).name]))/255;
     for j = 1:aug_num
-        if (mod(j,2)==1)
-            gray_image = fliplr(gray_image_o);
-        else
-            gray_image = gray_image_o;
-        end
-        gray_image = imresize(gray_image, (1+rand(1)*0.2), 'bicubic');
+        gray_image = imresize(gray_image_o, (1+rand(1)*0.1), 'bicubic');
         row_start = randi(length(gray_image(:,1))-feature_params.template_size);
         col_start = randi(length(gray_image(1,:))-feature_params.template_size);
         gray_image = gray_image(row_start:row_start+feature_params.template_size,col_start:col_start+feature_params.template_size);
+        if (mod(j,2)==1)
+            gray_image = fliplr(gray_image);
+        end
         features_pos((i-1)*aug_num+j,:) = reshape(vl_hog(gray_image,feature_params.hog_cell_size),1,[]);
     end
 end
