@@ -44,7 +44,9 @@ test_scenes = dir( fullfile( test_scn_path, '*.jpg' ));
 %initialize these as empty and incrementally expand them.
 num_test_scenes = length(test_scenes);
 
-for i = 1:num_test_scenes
+features_hard_neg = [];
+
+parfor i = 1:num_test_scenes
       
     fprintf('%d/%d\n', i, num_test_scenes)
     img = imread( fullfile( test_scn_path, test_scenes(i).name ));
@@ -52,8 +54,6 @@ for i = 1:num_test_scenes
     if(size(img,3) > 1)
         img = rgb2gray(img);
     end
-    
-    features_hard_neg = [];
     
     thresh = -0.5;
     for scale = 0.1:0.05:1.2
