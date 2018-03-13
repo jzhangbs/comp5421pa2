@@ -67,7 +67,7 @@ if(size(img,3) > 1)
 end
 
 feat = [];
-thresh = 0.2;
+thresh = 0;
 for scale = 1:1
     img_rs = imresize(img, scale, 'bicubic');
     hog = vl_hog(img_rs, feature_params.hog_cell_size);
@@ -75,7 +75,7 @@ for scale = 1:1
     for im_i = 1:(size(hog, 1)-win_cell_size+1)
         for im_j = 1:(size(hog, 2)-win_cell_size+1)
             win = hog(im_i:im_i+win_cell_size-1, im_j:im_j+win_cell_size-1, :);
-            imshow(vl_hog('render', win));
+%             imshow(vl_hog('render', win));
             win_flat = reshape(win, 1, []);
             new_conf = win_flat*w+b;
             new_conf = new_conf(1,1);
