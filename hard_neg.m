@@ -43,46 +43,45 @@ test_scenes = dir( fullfile( test_scn_path, '*.jpg' ));
 
 %initialize these as empty and incrementally expand them.
 num_test_scenes = length(test_scenes);
-
+p = gcp();
 features_hard_neg = [];
 
 for i = 1:num_test_scenes
-      
+    f(i) = parfeval(p, @hard_neg_core, 1, fullfile( test_scn_path, test_scenes(i).name ), w, b, feature_params);
+end
+
+for i = 1:num_test_scenes
     if (mod(i,20)==0)
         fprintf('%d/%d, %d\n', i, num_test_scenes, length(features_hard_neg(:,1)));
     end
-    img = imread( fullfile( test_scn_path, test_scenes(i).name ));
-    img = single(img)/255;
-    if(size(img,3) > 1)
-        img = rgb2gray(img);
-    end
-    
-    thresh = 0;
-    for scale = 1:1
-        img_rs = imresize(img, scale, 'bicubic');
-        hog = vl_hog(img_rs, feature_params.hog_cell_size);
-        win_cell_size = feature_params.template_size / feature_params.hog_cell_size;
-        for im_i = 1:(size(hog, 1)-win_cell_size+1)
-            for im_j = 1:(size(hog, 2)-win_cell_size+1)
-                win = hog(im_i:im_i+win_cell_size-1, im_j:im_j+win_cell_size-1, :);
-                win_flat = reshape(win, 1, []);
-                new_conf = win_flat*w+b;
-                new_conf = new_conf(1,1);
-%                 h = [h new_conf];
-                if (new_conf > thresh)
-                    features_hard_neg = [features_hard_neg; win_flat];
-                end
+    [idx, feat] = fetchNext(f);
+    features_hard_neg = [features_hard_neg; feat];
+end
+
+function feat = hard_neg_core(filename, w, b, feature_params)
+
+img = imread(filename);
+img = single(img)/255;
+if(size(img,3) > 1)
+    img = rgb2gray(img);
+end
+
+feat = [];
+thresh = 0.2;
+for scale = 1:1
+    img_rs = imresize(img, scale, 'bicubic');
+    hog = vl_hog(img_rs, feature_params.hog_cell_size);
+    win_cell_size = feature_params.template_size / feature_params.hog_cell_size;
+    for im_i = 1:(size(hog, 1)-win_cell_size+1)
+        for im_j = 1:(size(hog, 2)-win_cell_size+1)
+            win = hog(im_i:im_i+win_cell_size-1, im_j:im_j+win_cell_size-1, :);
+            imshow(vl_hog('render', win));
+            win_flat = reshape(win, 1, []);
+            new_conf = win_flat*w+b;
+            new_conf = new_conf(1,1);
+            if (new_conf > thresh)
+                feat = [feat; win_flat];
             end
         end
     end
-    
-%     max(h);
-    
-    %non_max_supr_bbox can actually get somewhat slow with thousands of
-    %initial detections. You could pre-filter the detections by confidence,
-    %e.g. a detection with confidence -1.1 will probably never be
-    %meaningful. You probably _don't_ want to threshold at 0.0, though. You
-    %can get higher recall with a lower threshold. You don't need to modify
-    %anything in non_max_supr_bbox, but you can.
 end
-

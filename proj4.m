@@ -58,9 +58,9 @@ feature_params = struct('template_size', 36, 'hog_cell_size', 3);
 %% Step 1. Load positive training crops and random negative examples
 %YOU CODE 'get_positive_features' and 'get_random_negative_features'
 
-do_pos = true;
-do_neg = true;
-do_train = true;
+do_pos = false;
+do_neg = false;
+do_train = false;
 do_hard_neg = true;
 do_train2 = true;
 
@@ -164,6 +164,36 @@ if (do_train2)
 else
     load('classifier2.mat', 'w', 'b');
 end
+
+fprintf('Second classifier performance on train data:\n')
+confidences = [features_pos; features_neg; features_hard_neg]*w + b;
+label_vector = [ones(size(features_pos,1),1); -1*ones(size(features_neg,1),1); ones(length(features_hard_neg(:,1)), 1)*-1];
+[tp_rate, fp_rate, tn_rate, fn_rate] =  report_accuracy( confidences, label_vector );
+
+% Visualize how well separated the positive and negative examples are at
+% training time. Sometimes this can idenfity odd biases in your training
+% data, especially if you're trying hard negative mining. This
+% visualization won't be very meaningful with the placeholder starter code.
+non_face_confs = confidences( label_vector < 0);
+face_confs     = confidences( label_vector > 0);
+figure(12); 
+plot(sort(face_confs), 'g'); hold on
+plot(sort(non_face_confs),'r'); 
+plot([0 size(non_face_confs,1)], [0 0], 'b');
+hold off;
+
+% Visualize the learned detector. This would be a good thing to include in
+% your writeup!
+n_hog_cells = sqrt(length(w) / 31); %specific to default HoG parameters
+imhog = vl_hog('render', single(reshape(w, [n_hog_cells n_hog_cells 31])), 'verbose') ;
+figure(13); imagesc(imhog) ; colormap gray; set(13, 'Color', [.988, .988, .988])
+
+pause(0.1) %let's ui rendering catch up
+hog_template_image = frame2im(getframe(13));
+% getframe() is unreliable. Depending on the rendering settings, it will
+% grab foreground windows instead of the figure in question. It could also
+% return a partial image.
+imwrite(hog_template_image, 'visualizations/hog_template_2.png')
 
 %% Step 5. Run detector on test set.
 % YOU CODE 'run_detector'. Make sure the outputs are properly structured!
