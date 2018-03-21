@@ -43,6 +43,7 @@ run('vlfeat/toolbox/vl_setup')
 
 data_path = '../data/'; %change if you want to work with a network copy
 train_path_pos = fullfile(data_path, 'caltech_faces/Caltech_CropFaces'); %Positive training examples. 36x36 head crops
+% train_path_pos = fullfile(data_path, 'NewFaceSet');
 non_face_scn_path = fullfile(data_path, 'train_non_face_scenes'); %We can mine random or hard negatives from here
 test_scn_path = fullfile(data_path,'test_scenes/test_jpg'); %CMU+MIT test scenes
 % test_scn_path = fullfile(data_path,'extra_test_scenes'); %Bonus scenes
@@ -58,19 +59,22 @@ feature_params = struct('template_size', 36, 'hog_cell_size', 3);
 %% Step 1. Load positive training crops and random negative examples
 %YOU CODE 'get_positive_features' and 'get_random_negative_features'
 
-do_pos = false;
-do_neg = false;
-do_train = false;
-use_hard_neg = false;
-do_hard_neg = false;
-do_train2 = false;
+do_pos = 0;
+do_neg = 0;
+do_train = 0;
+do_examine = 0;
+use_hard_neg = 0;
+do_hard_neg = 1;
+do_train2 = 1;
+w_filename = '934_no_aug.mat';
 
 if (do_pos)
     disp('begin pos');
     features_pos = get_positive_features( train_path_pos, feature_params );
     disp('pos finish');
     save('features_pos.mat', 'features_pos');
-else
+elseif (do_examine)
+    disp('load pos');
     load('features_pos.mat', 'features_pos');
 end
 
@@ -80,7 +84,8 @@ if (do_neg)
     features_neg = get_random_negative_features( non_face_scn_path, feature_params, num_negative_examples);
     disp('neg finish');
     save('features_neg.mat', 'features_neg');
-else
+elseif (do_examine)
+    disp('load neg');
     load('features_neg.mat', 'features_neg');
 end
     
@@ -102,14 +107,15 @@ if (do_train)
     [w, b] = vl_svmtrain(data, label, 1e-4, 'Verbose');
     save('classifier.mat', 'w', 'b');
 else
-    load('classifier.mat', 'w', 'b');
+    disp('load weight');
+    load(w_filename, 'w', 'b');
 end
 
 %% step 3. Examine learned classifier
 % You don't need to modify anything in this section. The section first
 % evaluates _training_ error, which isn't ultimately what we care about,
 % but it is a good sanity check. Your training error should be very low.
-
+if (do_examine)
 fprintf('Initial classifier performance on train data:\n')
 confidences = [features_pos; features_neg]*w + b;
 label_vector = [ones(size(features_pos,1),1); -1*ones(size(features_neg,1),1)];
@@ -140,7 +146,7 @@ hog_template_image = frame2im(getframe(3));
 % return a partial image.
 imwrite(hog_template_image, 'visualizations/hog_template.png')
     
- 
+end
 %% step 4. (optional) Mine hard negatives
 % Mining hard negatives is extra credit. You can get very good performance 
 % by using random negatives, so hard negative mining is somewhat
@@ -224,7 +230,7 @@ end
 [gt_ids, gt_bboxes, gt_isclaimed, tp, fp, duplicate_detections] = ...
     evaluate_detections(bboxes, confidences, image_ids, label_path);
 
-visualize_detections_by_image(bboxes, confidences, image_ids, tp, fp, test_scn_path, label_path)
+% visualize_detections_by_image(bboxes, confidences, image_ids, tp, fp, test_scn_path, label_path)
 % visualize_detections_by_image_no_gt(bboxes, confidences, image_ids, test_scn_path)
 
 % visualize_detections_by_confidence(bboxes, confidences, image_ids, test_scn_path, label_path);
